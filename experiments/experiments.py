@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score
 from statistics import mean
 from counterfactuality import counterfactuality
 
-datasets = ["voting", "diabetes", "heart", "breast32", "wine", "sick", "hypothyroid", "dermatology", "adult"]
+datasets = ["voting", "diabetes", "heart", "breast32", "wine", "sick", "hypothyroid", "dermatology", "vehicle", "adult"]
 
 depth = 4
 
@@ -16,11 +16,11 @@ for dataset in datasets:
     nominal_features = []
     numerical_features = []
     if dataset == "voting":
-        depth = 4
+        depth = 3
         for col in X_raw.columns:
             nominal_features.append(col)
 
-    if dataset == "diabetes" or dataset == "breast32" or dataset == "wine":
+    if dataset == "diabetes" or dataset == "breast32" or dataset == "wine" or dataset == "vehicle":
         depth = 4
         for col in X_raw.columns:
             numerical_features.append(col)
