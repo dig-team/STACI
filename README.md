@@ -29,3 +29,8 @@ To explain the instance:
 
 ```exp, ratio = explainer.verbose_predict(instance, predicted_label, features)```
 
+
+## Reference
+
+[N. Radulovic, A. Bifet, F. Suchanek, "Confident Interpretations of Black Box Classifiers",
+International Joint Conference on Neural Networks (IJCNN),2021 ](https://drive.google.com/file/d/195bgAx_uFGCqQakkjLYsPIa0jeOk5Tfy/view?usp=sharing)
