@@ -4,6 +4,9 @@
 
 STACI interpretation of Black Box classifiers using multiple surrogate Decision Trees.
 
+![Alt text](./experiments/staci_figure.png "STACI explained")
+
+
 ## Usage
 
 Download the code and import STACI:
