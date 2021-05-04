@@ -88,6 +88,7 @@ for dataset in datasets:
     counter_proba = []
     labels = y.unique()
     labels.sort()
+
     for trial in trials:
         print("Dataset: ", dataset)
         trainDf, testDf, y_train, y_test = train_test_split(X, y, test_size=0.1)
