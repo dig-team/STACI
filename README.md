@@ -44,5 +44,5 @@ Here, ```exp``` is the explanation, and ```ratio``` is the percentage of data po
 If you use or discuss our work, please cite
 
 [N. Radulovic](https://github.com/nedRad88/), [A. Bifet](https://albertbifet.com/), [F. Suchanek](https://suchanek.name):
-[“Confident Interpretations of Black Box Classifiers”](https://drive.google.com/file/d/195bgAx_uFGCqQakkjLYsPIa0jeOk5Tfy/view?usp=sharing)
+[“Confident Interpretations of Black Box Classifiers”](https://drive.google.com/file/d/1_3PhnwVLkBP4aZo4MXY6U15eceuUheXN/view?usp=sharing)
 International Joint Conference on Neural Networks (IJCNN), 2021
