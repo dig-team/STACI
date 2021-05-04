@@ -45,7 +45,7 @@ def create_leaf_node(level, leaf_node_id, data, target):
     return node
 
 
-def grow_with_stop(train_dataset, features, bb_model, important_class, depth, target, beta, nodes, current_level,
+def grow_with_stop(train_dataset, features, important_class, depth, target, beta, nodes, current_level,
                    weights, max_measure):
     """
 
@@ -86,7 +86,7 @@ def grow_with_stop(train_dataset, features, bb_model, important_class, depth, ta
 
             if current_level < depth - 1:
                 if train_dataset_left[target].nunique() > 1 and train_dataset_left.shape[0] >= 2:
-                    node.child_left = grow_with_stop(train_dataset_left, features, bb_model, important_class, depth,
+                    node.child_left = grow_with_stop(train_dataset_left, features, important_class, depth,
                                                      target, beta, nodes, current_level+1, weights, max_measure)
                 else:
                     leaf_node = create_leaf_node(level=current_level + 1, leaf_node_id=len(nodes),
@@ -94,7 +94,7 @@ def grow_with_stop(train_dataset, features, bb_model, important_class, depth, ta
                     node.child_left = leaf_node
                     nodes.append(node.child_left)
                 if train_dataset_right[target].nunique() > 1 and train_dataset_right.shape[0] >= 2:
-                    node.child_right = grow_with_stop(train_dataset_right, features, bb_model, important_class, depth,
+                    node.child_right = grow_with_stop(train_dataset_right, features, important_class, depth,
                                                       target, beta, nodes, current_level + 1, weights, max_measure)
                 else:
                     leaf_node = create_leaf_node(level=current_level + 1, leaf_node_id=len(nodes),
@@ -219,3 +219,14 @@ def maxi_depth(node):
             return l_depth + 1
         else:
             return r_depth + 1
+
+
+def compute_confidence_leaf(tree, decision_path, x):
+    confidence = 0.0
+    total = 0
+    for n_id in decision_path:
+        node = tree.nodes[n_id]
+        if not isinstance(node, InternalNode):
+            confidence = max(node.values.values())
+            total = node.n_samples
+    return confidence, total

@@ -14,7 +14,6 @@ class InternalNode:
         self.values = {}
 
     def predict(self, x):
-
         if x[self.feature] <= self.threshold:
             return self.child_left.predict(x)
         else:

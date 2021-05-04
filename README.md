@@ -23,19 +23,18 @@ To train the explainer, use the following code:
 
 To fit the explainer, use:
 
-```explainer.fit(x_train, y_train_black_box, black_box, features, target='target')```
+```explainer.fit(x_train, y_train_black_box, features, target='target')```
 
 The parameters are:
 * the training data in the array-like form of the shape (number_of_samples, number_of_features) (```x_train```)
 * the labels from the black box model in the array-like form of the shape (number_of_samples, ) (```y_train_black_box```)
-* the black box model to be explained (must have  ```predict()``` method) ( ```black_box``` )
 * the names of the features, one per dimension (```features```)
 * the name of the feature that is the label of the model (```target```)
 
 
 To explain an instance, use: 
 
-```exp, ratio = explainer.verbose_predict(instance, predicted_label, features)```
+```exp, ratio = explainer.verbose_predict(instance, predicted_label)```
 
 Here, ```exp``` is the explanation, and ```ratio``` is the percentage of data points to which it applies.
 

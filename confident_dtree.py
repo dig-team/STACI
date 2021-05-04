@@ -16,13 +16,13 @@ class DTree:
         self.beta = beta
         self.nodes = []
 
-    def fit(self, data, bb_model, features, important_class, label, weights):
+    def fit(self, data, features, important_class, label, weights):
         level = 0
         if data.shape[0] >= 2 and data[label].nunique() > 1:
             if self.max_depth is not None:
                 if self.max_depth > 0:
                     maximum_f1 = 0.0
-                    self.root = grow_with_stop(data, features, bb_model, important_class, self.max_depth, label,
+                    self.root = grow_with_stop(data, features, important_class, self.max_depth, label,
                                                self.beta, self.nodes, level, weights, maximum_f1)
                 else:
                     self.root = LeafNode(data.shape[0], level=level, node_id=0)
@@ -33,7 +33,7 @@ class DTree:
 
             else:
                 maximum_f1 = 0.0
-                self.root = grow_with_stop(data, features, bb_model, important_class, self.max_depth, label, self.beta,
+                self.root = grow_with_stop(data, features, important_class, self.max_depth, label, self.beta,
                                            self.nodes, level, weights, maximum_f1)
         else:
             self.root = LeafNode(data.shape[0], level=level, node_id=0)

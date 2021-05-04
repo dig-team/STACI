@@ -116,7 +116,7 @@ for dataset in datasets:
         y_pred_df = pd.Series((v for v in y_pred), name="target", index=trainDf.index)
 
         explainer = STACISurrogates(max_depth=depth)
-        explainer.fit(trainDf, y_pred_df, black_box, features=attrs, target='target')
+        explainer.fit(trainDf, y_pred_df, features=attrs, target='target')
         max_nodes = 0
         maximum_depth = 0
         for key, dtree in explainer.trees.items():
@@ -138,6 +138,7 @@ for dataset in datasets:
         exp_predict = explainer.predict(testDf, black_box)
         conf_predict, confidence_sample, leaf_values, explanation_length = explainer.confidence_predict(testDf,
                                                                                                         labels_count)
+
         fidelity_sample = accuracy_score(y_pred_test, conf_predict)
         coverage_sample = accuracy_score(y_pred_test, exp_predict)
         stpcr, stpca = counterfactuality(black_box, explainer, testDf, nominal_dummy_features)

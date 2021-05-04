@@ -11,7 +11,7 @@ class STACISurrogates:
         self.weighted = weighted
         self.prune = prune
 
-    def fit(self, X, y, bb_model, features, target):
+    def fit(self, X, y, features, target):
         """
 
         :param X: array-like of shape (n_samples, n_features)
@@ -27,7 +27,7 @@ class STACISurrogates:
         weights = compute_weights(data, target, self.weighted)
         for class_label in data[target].unique():
             self.trees[class_label] = DTree(beta=self.beta, max_depth=self.max_depth)
-            self.trees[class_label].fit(data, bb_model, features, class_label, target, weights)
+            self.trees[class_label].fit(data, features, class_label, target, weights)
             if self.prune:
                 self.__prune()
         return self
@@ -110,3 +110,82 @@ class STACISurrogates:
                 gen.append(v)
 
         return y_pred, confidence_tot, gen, exp_len
+
+    def verbose_predict(self, x, true_prediction):
+
+        max_confidence = 0.0
+        best_tree = None
+        best_path = None
+        true_samples = 0
+        total = 0
+
+        for key, tree in self.trees.items():
+            surrogate_prediction = tree.predict_single(x)
+            if surrogate_prediction == true_prediction:
+                path = tree.decision_path(x)
+                confidence, n_samples = compute_confidence_leaf(tree, path, x)
+                if n_samples > 0:
+                    if (confidence / n_samples) > max_confidence:
+                        max_confidence = confidence / n_samples
+                        true_samples = confidence
+                        total = n_samples
+                        best_tree = tree
+                        best_path = path
+        explanation = []
+        if best_tree and best_path:
+            for node_id in best_path:
+                node = best_tree.nodes[node_id]
+                if isinstance(node, InternalNode):
+                    if x[node.feature] <= node.threshold:
+                        if len(explanation) > 0:
+                            added = False
+                            for j in range(len(explanation)):
+                                if node.feature in explanation[j]:
+                                    if "<=" in explanation[j]:
+                                        if best_tree.nodes[best_path[j]].threshold > node.threshold:
+                                            explanation.pop(j)
+                                            explanation.append(node.feature + " <= " + str(node.threshold))
+                                            added = True
+                                        else:
+                                            added = True
+                                    elif ">" in explanation[j]:
+                                        explanation.pop(j)
+                                        explanation.append(
+                                            str(best_tree.nodes[best_path[j]].threshold) + " < " + node.feature + " <= "
+                                            + str(node.threshold))
+                                        added = True
+                            if not added:
+                                explanation.append(node.feature + " <= " + str(node.threshold))
+                                added = True
+                        else:
+                            explanation.append(node.feature + " <= " + str(node.threshold))
+                    else:
+                        if len(explanation) > 0:
+                            added = False
+                            for j in range(len(explanation)):
+                                if node.feature in explanation[j]:
+                                    if ">" in explanation[j]:
+                                        if best_tree.nodes[best_path[j]].threshold <= node.threshold:
+                                            explanation.pop(j)
+                                            explanation.append(node.feature + " > " + str(node.threshold))
+                                            added = True
+                                        else:
+                                            added = True
+                                    elif "<=" in explanation[j]:
+                                        explanation.pop(j)
+                                        explanation.append(str(node.threshold) + " < " + node.feature + " <= " + str(
+                                                best_tree.nodes[best_path[j]].threshold))
+                                        added = True
+                            if not added:
+                                explanation.append(node.feature + " > " + str(node.threshold))
+                        else:
+                            explanation.append(node.feature + " > " + str(node.threshold))
+
+        else:
+            return None, (true_samples, total)
+
+        if total > 0:
+            return explanation, true_samples / total
+        else:
+            return explanation, true_samples / (total + 1)
+
