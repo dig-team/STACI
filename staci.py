@@ -12,6 +12,17 @@ class STACISurrogates:
         self.prune = prune
 
     def fit(self, X, y, bb_model, features, target):
+        """
+
+        :param X: array-like of shape (n_samples, n_features)
+            The training input samples.
+        :param y: array-like of shape (n_samples,). The target values (class labels) as integers
+        :param bb_model: Black box model to explain (must have predict() method)
+        :param features: Attribute (column) names
+        :param target: The label column name
+        :return:
+
+        """
         data = data_preparation(X, y, features, target)
         weights = compute_weights(data, target, self.weighted)
         for class_label in data[target].unique():
