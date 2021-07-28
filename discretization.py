@@ -127,5 +127,6 @@ def unic_clustering(x):
 
     for item in x:
         print(item)
+        print(item-1)
 
     return x
