@@ -125,6 +125,7 @@ def compute_edges(interval_dict, n_bins):
 
 def unic_clustering(x):
 
-    print(x)
+    for item in x:
+        print(item)
 
     return x
