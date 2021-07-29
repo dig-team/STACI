@@ -1,17 +1,32 @@
-import numpy as np
-import pandas as pd
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import mean_absolute_percentage_error, mean_absolute_error
 from math import floor, ceil
-from statistics import median
 from sklearn.cluster import KMeans
+from unic_clustering import *
+from disc_utils import *
+import numpy as np
 
 
-def discretization(x, number_of_intervals=0):
+def discretization(data, number_of_intervals=0):
     intervals = {}
 
+    clusters_unic = unic_algorithm(data)
+
     if number_of_intervals == 0:
-        pass
+        number_of_intervals = len(clusters_unic.keys())
+    unic_predict = predict_cluster(data, clusters_unic)
+    unic_mae, unic_mape = evaluate_cluster(data, unic_predict)
+    print("UNIC: ", unic_mae, unic_mape)
+    clusters_ew = equal_width_intervals(data, number_of_intervals)
+    ew_predict = predict_cluster(data, clusters_ew)
+    ew_mae, ew_mape = evaluate_cluster(data, ew_predict)
+    print("EW: ", ew_mae, ew_mape)
+    clusters_ef = equal_frequency_intervals(data, number_of_intervals)
+    ef_predict = predict_cluster(data, clusters_ef)
+    ef_mae, ef_mape = evaluate_cluster(data, ef_predict)
+    print("EF: ", ef_mae, ef_mape)
+    clusters_kmeans = kmeans_clustering(np.reshape(data, (-1, 1)), number_of_intervals)
+    kmeans_predict = predict_cluster(data, clusters_kmeans)
+    kmeans_mae, kmeans_mape = evaluate_cluster(data, kmeans_predict)
+    print("Kmeans: ", kmeans_mae, kmeans_mape)
 
     return intervals
 
@@ -21,7 +36,6 @@ def equal_width_intervals(data, n_intervals):
     min_value = min(data)
 
     width = (max_value - min_value) / n_intervals
-    print(width)
     data.sort()
 
     intervals = {}
@@ -48,7 +62,6 @@ def equal_width_intervals(data, n_intervals):
 
 def equal_frequency_intervals(data, n_intervals):
     bin_size = ceil(len(data) / n_intervals)
-    print(bin_size)
     data.sort()
 
     intervals = {}
@@ -82,10 +95,10 @@ def kmeans_clustering(data, n_intervals):
     for i in range(len(data)):
         prediction = int(cls.predict([data[i]])[0])
         if prediction in intervals:
-            intervals[prediction]['items'].append(int(data[i][0]))
+            intervals[prediction]['items'].append(float(data[i][0]))
         else:
             intervals[prediction] = {}
-            intervals[prediction]['items'] = [int(data[i][0])]
+            intervals[prediction]['items'] = [float(data[i][0])]
 
     for key, value in intervals.items():
         value['median'] = median(value['items'])
@@ -105,28 +118,3 @@ def kmeans_clustering(data, n_intervals):
     intervals = compute_edges(interval_dict=intervals2, n_bins=n_intervals)
 
     return intervals
-
-
-def compute_edges(interval_dict, n_bins):
-
-    for key, value in interval_dict.items():
-        if key == 0:
-            value['min'] = min(value['items'])
-            value['max'] = (min(interval_dict[key + 1]['items']) + max(value['items'])) / 2
-        elif key < n_bins - 1:
-            value['min'] = interval_dict[key - 1]['max']
-            value['max'] = (min(interval_dict[key + 1]['items']) + max(value['items'])) / 2
-        else:
-            value['min'] = interval_dict[key - 1]['max']
-            value['max'] = max(value['items'])
-
-    return interval_dict
-
-
-def unic_clustering(x):
-
-    for item in x:
-        print(item)
-        print(item-1)
-
-    return x
