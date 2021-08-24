@@ -26,6 +26,7 @@ def unic_algorithm(data):
     clusters = find_neighbours(neighbours1, clusters3)
 
     updated_clusters = update_cluster_metrics(clusters)
+    updated_clusters['Model'] = "UNIC"
 
     return updated_clusters
 
@@ -41,13 +42,14 @@ def compute_distances(ref_point, points):
 
 def compute_differences(distances_dict):
     differences = {}
-
+    diff = []
     previous = 0
     for key, value in distances_dict.items():
         differences[key] = distances_dict[key] - previous
+        diff.append(differences[key])
         previous = distances_dict[key]
 
-    return differences
+    return differences, diff
 
 
 def compute_3rd_quartile(data):
@@ -56,13 +58,18 @@ def compute_3rd_quartile(data):
     upper_half = [item for item in data if item > med]
     lower_half = [item for item in data if item < med]
 
+    if len(upper_half) == 0:
+        upper_half = [item for item in data if item >= med]
+    elif len(lower_half) == 0:
+        lower_half = [item for item in data if item <= med]
+
     return median(upper_half), median(upper_half) - median(lower_half)
 
 
 def partitioning(distances, points_dict):
     clusters = {}
     sorted_distances = dict(sorted(distances.items(), key=lambda item: item[1]))
-    differences = compute_differences(sorted_distances)
+    differences, diff = compute_differences(sorted_distances)
 
     n = len(distances.keys())
     p = int(sqrt(n))
@@ -73,17 +80,16 @@ def partitioning(distances, points_dict):
         if p-1 <= counter <= n - p - 1:
             dist_diff_subset.append(value)
         counter += 1
-
     mean_subset = mean(dist_diff_subset)
     sd_subset = stdev(dist_diff_subset)
-
     clean_subset = [item for item in dist_diff_subset if item > mean_subset + sd_subset]
 
     q3_clean, iqr_clean = compute_3rd_quartile(clean_subset)
     mc_clean = medcouple(clean_subset)
-
-    ref_dist_diff = q3_clean + 1.5 * exp(3 * mc_clean) * iqr_clean
-
+    if mc_clean < 0.6:
+        ref_dist_diff = q3_clean + 1.5 * (exp(3 * mc_clean)) * iqr_clean
+    else:
+        ref_dist_diff = q3_clean + 1.5 * iqr_clean
     current_cluster = 0
     countdown_value = p/2
     countdown = countdown_value + 1
