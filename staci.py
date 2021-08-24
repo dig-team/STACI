@@ -1,15 +1,19 @@
 from confident_dtree import DTree
 from staci_utils import *
+from disc_utils import *
+from discretization import discretization
 
 
 class STACISurrogates:
 
-    def __init__(self, max_depth, beta=1, weighted=False, prune=True):
+    def __init__(self, max_depth, beta=1, weighted=False, prune=True, regression=False):
         self.trees = {}
         self.max_depth = max_depth
         self.beta = beta
         self.weighted = weighted
         self.prune = prune
+        self.regression = regression
+        self.clusters = {}
 
     def fit(self, X, y, features, target):
         """
@@ -24,6 +28,14 @@ class STACISurrogates:
 
         """
         data = data_preparation(X, y, features, target)
+        if self.regression:
+            data_to_discretize = data[target].tolist()
+            intervals = discretization(data_to_discretize)
+            self.clusters = intervals
+            new_target = predict_cluster(data_to_discretize, intervals)
+            new_target = pd.Series((v[0] for v in new_target))
+            data = data.drop(target, axis=1)
+            data[target] = new_target
         weights = compute_weights(data, target, self.weighted)
         for class_label in data[target].unique():
             self.trees[class_label] = DTree(beta=self.beta, max_depth=self.max_depth)
@@ -72,8 +84,21 @@ class STACISurrogates:
             tree_prediction = None
             for key, tree in self.trees.items():
                 surrogate_prediction = tree.predict_single(X.iloc[i, :])
-                if bb_model_prediction == surrogate_prediction:
-                    tree_prediction = surrogate_prediction
+                if not self.regression:
+                    if bb_model_prediction == surrogate_prediction:
+                        tree_prediction = surrogate_prediction
+                else:
+                    surrogate_prediction_median = self.clusters[surrogate_prediction]['median']
+                    difference = None
+                    if self.clusters[surrogate_prediction]['min'] <= bb_model_prediction <= self.clusters[surrogate_prediction]['max']:
+                        tree_prediction = surrogate_prediction_median
+                    else:
+                        if difference is None:
+                            difference = abs(surrogate_prediction - bb_model_prediction)
+                            tree_prediction = surrogate_prediction_median
+                        elif difference > abs(surrogate_prediction - bb_model_prediction):
+                            difference = abs(surrogate_prediction - bb_model_prediction)
+                            tree_prediction = surrogate_prediction_median
 
             if tree_prediction is None:
                 tree_prediction = self.trees[bb_model_prediction[0]].predict_single(X.iloc[i, :])
@@ -104,6 +129,8 @@ class STACISurrogates:
                         if node.node_id == path[-1]:
                             v = max(node.values.values()) / count[best_prediction]
             exp_len.append(best_path)
+            if self.regression:
+                best_prediction = self.clusters[best_prediction]['median']
             y_pred.append(best_prediction)
             confidence_tot.append(max_confidence)
             if v > 0:

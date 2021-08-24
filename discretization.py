@@ -7,9 +7,8 @@ from sklearn.metrics import silhouette_score
 import csv
 
 
-def discretization(data, file, number_of_intervals=0):
-    intervals = {}
-    iterations = [5, 10, 20]
+def discretization(data, number_of_intervals=0):
+    iterations = 10
     clusters_unic = unic_algorithm(data)
     silhouette_max = 0.0
     i_max = 1
@@ -17,30 +16,23 @@ def discretization(data, file, number_of_intervals=0):
     if number_of_intervals == 0:
         number_of_intervals = len(clusters_unic.keys())
 
-    unic_predict = predict_cluster(data, clusters_unic)
-    if len(clusters_unic.keys()) > 2:
+    if len(clusters_unic.keys()) > 1:
         silhouette_unic = compute_silhouette_score(clusters_unic, data)
         if silhouette_unic > silhouette_max:
             silhouette_max = silhouette_unic
             i_max = len(clusters_unic.keys())
             clusters = clusters_unic
 
-    for i in range(number_of_intervals, number_of_intervals + max(iterations) + 1):
-        # print(i)
+    for i in range(number_of_intervals, number_of_intervals + iterations + 1):
         clusters_ew = equal_width_intervals(data, i)
         clusters_ef = equal_frequency_intervals(data, i)
         clusters_kmeans = kmeans_clustering(np.reshape(data, (-1, 1)), i)
-        if i > 2:
+        if i > 1:
             silhouette_max, i_max, clusters = update_max_silhouette(clusters_ew, data, silhouette_max, i_max, i, clusters)
             silhouette_max, i_max, clusters = update_max_silhouette(clusters_ef, data, silhouette_max, i_max, i, clusters)
             silhouette_max, i_max, clusters = update_max_silhouette(clusters_kmeans, data, silhouette_max, i_max, i, clusters)
 
-        if (i - number_of_intervals) in iterations:
-            clusters_predict = predict_cluster(data, clusters)
-            mse, mae = evaluate_cluster(data, clusters_predict)
-            print(file, clusters['Model'], mse, mae, i_max - 1, silhouette_max)
-
-    return intervals
+    return clusters
 
 
 def equal_width_intervals(data, n_intervals):
@@ -87,7 +79,6 @@ def equal_width_intervals(data, n_intervals):
         else:
             value['median'] = (intervals[bin_number]['max'] + intervals[bin_number]['min']) / 2
 
-    intervals['Model'] = 'EW'
     return intervals
 
 
@@ -122,7 +113,6 @@ def equal_frequency_intervals(data, n_intervals):
         value['median'] = median(value['items'])
 
     intervals = compute_edges(interval_dict=intervals, n_bins=len(intervals.keys()))
-    intervals['Model'] = 'EF'
     return intervals
 
 
@@ -154,17 +144,14 @@ def kmeans_clustering(data, n_intervals):
                 clusters += 1
 
     intervals = compute_edges(interval_dict=intervals2, n_bins=n_intervals)
-    intervals['Model'] = 'KMeans'
     return intervals
 
 
 def return_cluster_labels(clusterer, X):
     labels = []
-    clusters_copy = clusterer.copy()
-    clusters_copy.pop('Model', None)
     for item in X:
         found = False
-        for key, value in clusters_copy.items():
+        for key, value in clusterer.items():
             if item in value["items"]:
                 labels.append(key)
                 found = True

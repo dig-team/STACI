@@ -26,11 +26,9 @@ def compute_edges(interval_dict, n_bins):
 
 def predict_cluster(data, clusters):
     prediction = []
-    clusters_copy = clusters.copy()
-    clusters_copy.pop('Model', None)
-    max_key = max(clusters_copy.keys())
+    max_key = max(clusters.keys())
     for item in data:
-        for key, value in clusters_copy.items():
+        for key, value in clusters.items():
             if key < max_key:
                 if key == 0:
                     if item < value['max']:

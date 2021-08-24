@@ -26,7 +26,6 @@ def unic_algorithm(data):
     clusters = find_neighbours(neighbours1, clusters3)
 
     updated_clusters = update_cluster_metrics(clusters)
-    updated_clusters['Model'] = "UNIC"
 
     return updated_clusters
 
