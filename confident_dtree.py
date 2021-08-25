@@ -26,8 +26,8 @@ class DTree:
                                                self.beta, self.nodes, level, weights, maximum_f1)
                 else:
                     self.root = LeafNode(data.shape[0], level=level, node_id=0)
-                    for l in sorted(data[label].unique()):
-                        self.root.values[l] = data[data[label] == l].shape[0]
+                    for l1 in sorted(data[label].unique()):
+                        self.root.values[l1] = data[data[label] == l1].shape[0]
                     self.root.function = max(self.root.values.items(), key=operator.itemgetter(1))[0]
                     self.nodes.append(self.root)
 
@@ -37,8 +37,8 @@ class DTree:
                                            self.nodes, level, weights, maximum_f1)
         else:
             self.root = LeafNode(data.shape[0], level=level, node_id=0)
-            for l in sorted(data[label].unique()):
-                self.root.values[l] = data[data[label] == l].shape[0]
+            for l1 in sorted(data[label].unique()):
+                self.root.values[l1] = data[data[label] == l1].shape[0]
             self.root.function = max(self.root.values.items(), key=operator.itemgetter(1))[0]
             self.nodes.append(self.root)
 

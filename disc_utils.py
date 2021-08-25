@@ -1,4 +1,4 @@
-from sklearn.metrics import mean_absolute_percentage_error, mean_absolute_error, mean_squared_error
+# from sklearn.metrics import mean_absolute_percentage_error, mean_absolute_error, mean_squared_error
 
 
 def compute_edges(interval_dict, n_bins):
@@ -43,9 +43,15 @@ def predict_cluster(data, clusters):
 
 
 def evaluate_cluster(data, predicted):
+    abs_sum = 0.0
+    for i in range(len(data)):
+        abs_sum += abs(data[i] - predicted[i])
 
+    wape = (abs_sum / sum(data)) * 100
+    """
     mae = mean_absolute_error(data, predicted)
     mape = mean_absolute_percentage_error(data, predicted)
     mse = mean_squared_error(data, predicted)
+    """
 
-    return mse, mae
+    return wape

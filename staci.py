@@ -21,7 +21,6 @@ class STACISurrogates:
         :param X: array-like of shape (n_samples, n_features)
             The training input samples.
         :param y: array-like of shape (n_samples,). The target values (class labels) as integers
-        :param bb_model: Black box model to explain (must have predict() method)
         :param features: Attribute (column) names
         :param target: The label column name
         :return:
@@ -82,6 +81,7 @@ class STACISurrogates:
         for i in range(X.shape[0]):
             bb_model_prediction = bb_model.predict([X.iloc[i, :]])
             tree_prediction = None
+            difference = None
             for key, tree in self.trees.items():
                 surrogate_prediction = tree.predict_single(X.iloc[i, :])
                 if not self.regression:
@@ -89,8 +89,8 @@ class STACISurrogates:
                         tree_prediction = surrogate_prediction
                 else:
                     surrogate_prediction_median = self.clusters[surrogate_prediction]['median']
-                    difference = None
-                    if self.clusters[surrogate_prediction]['min'] <= bb_model_prediction <= self.clusters[surrogate_prediction]['max']:
+                    if self.clusters[surrogate_prediction]['min'] <= bb_model_prediction\
+                            <= self.clusters[surrogate_prediction]['max']:
                         tree_prediction = surrogate_prediction_median
                     else:
                         if difference is None:
@@ -148,7 +148,8 @@ class STACISurrogates:
 
         for key, tree in self.trees.items():
             surrogate_prediction = tree.predict_single(x)
-            if surrogate_prediction == true_prediction:
+            if surrogate_prediction == true_prediction or self.clusters[surrogate_prediction]['min'] \
+                    <= true_prediction <= self.clusters[surrogate_prediction]['max']:
                 path = tree.decision_path(x)
                 confidence, n_samples = compute_confidence_leaf(tree, path, x)
                 if n_samples > 0:
@@ -183,7 +184,7 @@ class STACISurrogates:
                                         added = True
                             if not added:
                                 explanation.append(node.feature + " <= " + str(node.threshold))
-                                added = True
+                                # added = True
                         else:
                             explanation.append(node.feature + " <= " + str(node.threshold))
                     else:
@@ -215,4 +216,3 @@ class STACISurrogates:
             return explanation, true_samples / total
         else:
             return explanation, true_samples / (total + 1)
-
