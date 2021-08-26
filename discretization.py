@@ -6,41 +6,31 @@ import numpy as np
 from sklearn.metrics import silhouette_score
 
 
-def discretization(data, number_of_intervals=0, max_percentage_error=None):
+def discretization(data, number_of_intervals=0, max_percentage_error=None, bin_width=None, bin_size=None):
     models = [equal_width_intervals, equal_frequency_intervals, kmeans_clustering]
     clusters = {}
-    if not max_percentage_error:
-        # User picked the number of intervals
-        if number_of_intervals > 1:
-            # Just return the discretization for provided number of intervals.
-            # Pick the best among the three: EW, EF, Kmeans (based on a silhouette score)
-            return return_n_clusters(data, number_of_intervals)
+
+    if number_of_intervals > 1:
+        return return_n_clusters(data, number_of_intervals)
+    elif bin_width:
+        n_clusters = int(1 / bin_width)
+        if n_clusters > 1:
+            return equal_width_intervals(data, n_clusters)
         else:
-            # User didn't provide any input. We use UNIC to determine the approximate number of intervals for
-            # discretization
-            clusters_unic = unic_algorithm(data)
-            number_of_intervals = len(clusters_unic.keys())
-            iterations = 10
-            silhouette_max = -1.0
-            i_max = 1
-            if len(clusters_unic.keys()) > 1:
-                silhouette_unic = compute_silhouette_score(clusters_unic, data)
-                if silhouette_unic > silhouette_max:
-                    silhouette_max = silhouette_unic
-                    i_max = len(clusters_unic.keys())
-                    clusters = clusters_unic
+            raise ValueError("The bin width is too big. Bin width should be in range (0, 0.5)")
+    elif bin_size:
+        n_clusters = int(len(data)/bin_size)
+        if n_clusters > 1:
+            return equal_frequency_intervals(data, n_clusters)
+        else:
+            raise ValueError("The bin size is too big. Bin size should be in range [1, {})".format(int(len(data)/2)))
 
-            for i in range(number_of_intervals, number_of_intervals + iterations + 1):
-                for model in models:
-                    candidate_clusters = wrapper(model, data, i)
-                    silhouette_max, i_max, clusters = update_max_silhouette(candidate_clusters, data, silhouette_max,
-                                                                            i_max, i, clusters)
-
-            return clusters
-    else:
+    elif max_percentage_error:
+        if max_percentage_error <= 0.0 or max_percentage_error >= 1.0:
+            raise ValueError('The maximum allowed error must take value from the range (0, 1)')
         clusters_unic = unic_algorithm(data)
         number_of_intervals = len(clusters_unic.keys())
-        min_error = 100.0
+        min_error = 1.0
         for i in range(number_of_intervals, int(sqrt(len(data)))):
             for model in models:
                 candidate_clusters = wrapper(model, data, i)
@@ -54,6 +44,29 @@ def discretization(data, number_of_intervals=0, max_percentage_error=None):
 
         print("Reached maximum number of iterations. "
               "Returning the discretization for {} number of bins".format(int(sqrt(len(data)))))
+        return clusters
+
+    else:
+        # User didn't provide any input. We use UNIC to determine the approximate number of intervals for
+        # discretization
+        clusters_unic = unic_algorithm(data)
+        number_of_intervals = len(clusters_unic.keys())
+        iterations = 10
+        silhouette_max = -1.0
+        i_max = 1
+        if len(clusters_unic.keys()) > 1:
+            silhouette_unic = compute_silhouette_score(clusters_unic, data)
+            if silhouette_unic > silhouette_max:
+                silhouette_max = silhouette_unic
+                i_max = len(clusters_unic.keys())
+                clusters = clusters_unic
+
+        for i in range(number_of_intervals, number_of_intervals + iterations + 1):
+            for model in models:
+                candidate_clusters = wrapper(model, data, i)
+                silhouette_max, i_max, clusters = update_max_silhouette(candidate_clusters, data, silhouette_max,
+                                                                        i_max, i, clusters)
+
         return clusters
 
 

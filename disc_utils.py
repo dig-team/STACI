@@ -47,7 +47,7 @@ def evaluate_cluster(data, predicted):
     for i in range(len(data)):
         abs_sum += abs(data[i] - predicted[i])
 
-    wape = (abs_sum / sum(data)) * 100
+    wape = (abs_sum / sum(data))
     """
     mae = mean_absolute_error(data, predicted)
     mape = mean_absolute_percentage_error(data, predicted)
