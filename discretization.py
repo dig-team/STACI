@@ -62,10 +62,11 @@ def discretization(data, number_of_intervals=0, max_percentage_error=None, bin_w
                 clusters = clusters_unic
 
         for i in range(number_of_intervals, number_of_intervals + iterations + 1):
-            for model in models:
-                candidate_clusters = wrapper(model, data, i)
-                silhouette_max, i_max, clusters = update_max_silhouette(candidate_clusters, data, silhouette_max,
-                                                                        i_max, i, clusters)
+            if i > 1:
+                for model in models:
+                    candidate_clusters = wrapper(model, data, i)
+                    silhouette_max, i_max, clusters = update_max_silhouette(candidate_clusters, data, silhouette_max,
+                                                                            i_max, i, clusters)
 
         return clusters
 

@@ -11,7 +11,7 @@ datasets = ["auto", "electrical", "bike", "servo", "housing", "concrete", "super
 depth = 4
 
 for dataset in datasets:
-    df = pd.read_csv("../datasets/" + dataset + ".csv", header=0)
+    df = pd.read_csv("../datasets/regression/" + dataset + ".csv", header=0)
     y = df["target"]
     X_raw = df.drop("target", axis=1)
     nominal_features = []
@@ -76,7 +76,13 @@ for dataset in datasets:
 
         explainer = STACISurrogates(max_depth=depth, regression=True)
         explainer.fit(trainDf, y_pred_df, features=attrs, target='target')
-        labels_count = 0  # TODO
+        labels_count = {}
+        labels_predict = convert_to_labels(y_pred, explainer.clusters)
+        for item in labels_predict:
+            if item in labels_count:
+                labels_count[item] += 1
+            else:
+                labels_count[item] = 1
 
         max_nodes = 0
         maximum_depth = 0
@@ -99,8 +105,8 @@ for dataset in datasets:
         exp_predict = explainer.predict(testDf, black_box)
         conf_predict, confidence_sample, leaf_values, explanation_length = explainer.confidence_predict(testDf, labels_count)
 
-        fidelity_sample = accuracy_score(y_pred_test, conf_predict)
-        coverage_sample = accuracy_score(y_pred_test, exp_predict)
+        fidelity_sample = evaluate_cluster(y_pred_test, conf_predict)
+        coverage_sample = evaluate_cluster(y_pred_test, exp_predict)
 
         fidelity.append(fidelity_sample)
         coverage.append(coverage_sample)

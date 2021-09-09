@@ -31,8 +31,8 @@ class STACISurrogates:
             data_to_discretize = data[target].tolist()
             intervals = discretization(data_to_discretize)
             self.clusters = intervals
-            new_target = predict_cluster(data_to_discretize, intervals)
-            new_target = pd.Series((v[0] for v in new_target))
+            new_target1 = convert_to_labels(data_to_discretize, intervals)
+            new_target = pd.Series((v for v in new_target1), name="target", index=data.index)
             data = data.drop(target, axis=1)
             data[target] = new_target
         weights = compute_weights(data, target, self.weighted)

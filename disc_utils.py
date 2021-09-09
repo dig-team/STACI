@@ -42,8 +42,20 @@ def predict_cluster(data, clusters):
     return prediction
 
 
+def convert_to_labels(data, clusters):
+    prediction = []
+
+    for item in data:
+        for key, value in clusters.items():
+            if item in value['items']:
+                prediction.append(key)
+
+    return prediction
+
+
 def evaluate_cluster(data, predicted):
     abs_sum = 0.0
+    data = list(data)
     for i in range(len(data)):
         abs_sum += abs(data[i] - predicted[i])
 
