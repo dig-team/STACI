@@ -29,17 +29,21 @@ class InternalNode:
 
 class LeafNode:
 
-    def __init__(self, n_samples, level, node_id=None):
+    def __init__(self, n_samples, level, node_id=None, regressor=False):
 
         self.n_samples = n_samples
         self.depth = level
         self.node_id = node_id
         self.values = {}
         self.function = None
+        self.regressor = regressor
+        self.median = None
 
     def predict(self, X):
-
-        return self.function
+        if not self.regressor:
+            return self.function
+        else:
+            return self.median
 
     def predict_verbose(self, x, path):
         path.append(self.node_id)

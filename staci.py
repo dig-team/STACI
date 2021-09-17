@@ -81,7 +81,6 @@ class STACISurrogates:
         for i in range(X.shape[0]):
             bb_model_prediction = bb_model.predict([X.iloc[i, :]])
             tree_prediction = None
-            difference = None
             for key, tree in self.trees.items():
                 surrogate_prediction = tree.predict_single(X.iloc[i, :])
                 if not self.regression:
@@ -90,18 +89,22 @@ class STACISurrogates:
                 else:
                     surrogate_prediction_median = self.clusters[surrogate_prediction]['median']
                     if self.clusters[surrogate_prediction]['min'] <= bb_model_prediction\
-                            <= self.clusters[surrogate_prediction]['max']:
+                            < self.clusters[surrogate_prediction]['max']:
                         tree_prediction = surrogate_prediction_median
-                    else:
-                        if difference is None:
-                            difference = abs(surrogate_prediction - bb_model_prediction)
-                            tree_prediction = surrogate_prediction_median
-                        elif difference > abs(surrogate_prediction - bb_model_prediction):
-                            difference = abs(surrogate_prediction - bb_model_prediction)
-                            tree_prediction = surrogate_prediction_median
 
-            if tree_prediction is None:
+            if tree_prediction is None and not self.regression:
                 tree_prediction = self.trees[bb_model_prediction[0]].predict_single(X.iloc[i, :])
+            if tree_prediction is None and self.regression:
+                difference = None
+                for key, tree in self.trees.items():
+                    surrogate_prediction = tree.predict_single(X.iloc[i, :])
+                    surrogate_prediction_median = self.clusters[surrogate_prediction]['median']
+                    if difference is None:
+                        difference = abs(surrogate_prediction_median - bb_model_prediction)
+                        tree_prediction = surrogate_prediction_median
+                    elif difference > abs(surrogate_prediction_median - bb_model_prediction):
+                        difference = abs(surrogate_prediction_median - bb_model_prediction)
+                        tree_prediction = surrogate_prediction_median
 
             y_pred.append(tree_prediction)
 
