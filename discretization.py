@@ -76,6 +76,7 @@ def discretization(data, number_of_intervals=0, max_percentage_error=None, bin_w
 
 
 def return_n_clusters(data, n):
+    # For given n, return the best clustering based on the Silhouette score
     models = [equal_width_intervals, equal_frequency_intervals, kmeans_clustering]
     best_clusters = {}
     best_silhouette = -1.0
