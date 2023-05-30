@@ -35,7 +35,11 @@ def discretization(data, number_of_intervals=0, max_percentage_error=None, bin_w
             for model in models:
                 candidate_clusters = wrapper(model, data, i)
                 predicted = predict_cluster(data, candidate_clusters)
-                error = evaluate_cluster(data, predicted)
+                try:
+                    error = evaluate_cluster(data, predicted)
+                except Exception as E:
+                    print(len(predicted), len(data))
+                    error = 1.0
                 if error < min_error:
                     min_error = error
                     clusters = candidate_clusters

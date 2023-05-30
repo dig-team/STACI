@@ -1,15 +1,17 @@
 from staci import *
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, mean_squared_error
 from statistics import mean
 from sklearn.neural_network import MLPRegressor
 from disc_utils import evaluate_cluster
+import time
 
-datasets = ["concrete",  "superconduct", "electrical", "auto", "bike", "servo", "housing"]
+datasets = ["auto", "bike", "housing", "servo", "concrete"]
 
-depths = [3, 4, 5]
-
+depths = [3, 4, 5, 6]
+start_time = time.time()
+print("Start time: ", start_time)
 for dataset in datasets:
     df = pd.read_csv("../datasets/regression/" + dataset + ".csv", header=0)
     y = df["target"]
@@ -50,42 +52,71 @@ for dataset in datasets:
     for column in X.columns:
         attrs.append(column)
 
-    trials = [i for i in range(20)]
+    trials = [i for i in range(10)]
+    fidelity = {}
+    coverage = {}
+    confidence = {}
+    wapa_complex = []
+    av_generality = {}
+    average_length = {}
+    n_nodes = {}
+    counter = {}
+    m_depth = {}
+    counter_proba = {}
+    number_of_clusters = {}
+    mse_fidelity = {}
+    mse_coverage = {}
 
-    for depth in depths:
-        fidelity = []
-        coverage = []
-        confidence = []
-        wapa_complex = []
-        av_generality = []
-        average_length = []
-        n_nodes = []
-        counter = []
-        m_depth = []
-        counter_proba = []
-        number_of_clusters = []
-        for trial in trials:
-            trainDf, testDf, y_train, y_test = train_test_split(X, y, test_size=0.1)
-            black_box = RandomForestRegressor(n_estimators=1000)
-            # black_box = MLPRegressor(solver='lbfgs', hidden_layer_sizes=(500,))
-            black_box.fit(trainDf, y_train)
-            y_pred = black_box.predict(trainDf)
+    for trial in trials:
+        trainDf, testDf, y_train, y_test = train_test_split(X, y, test_size=0.1)
+        # black_box = RandomForestRegressor(n_estimators=1000)
+        black_box = MLPRegressor(solver='adam', hidden_layer_sizes=(500,), max_iter=1000)
+        black_box.fit(trainDf, y_train)
+        y_pred = black_box.predict(trainDf)
+        y_pred_test = black_box.predict(testDf)
+        wapa_complex.append(evaluate_cluster(y_test, y_pred_test))
+        y_pred_df = pd.Series((v for v in y_pred), name="target", index=trainDf.index)
+        data = data_preparation(trainDf, y_pred_df, attrs, 'target')
+        data_to_discretize = data['target'].tolist()
+        data = data.rename(columns={'target': 'numerical_target'})
+        intervals = discretization(data_to_discretize, max_percentage_error=0.1)
+        clusters = intervals
+        print(clusters.keys())
+        print("Discretization done!")
+        print("--- %s seconds ---" % (time.time() - start_time))
+        new_target1 = convert_to_labels(data_to_discretize, intervals)
+        new_target = pd.Series((v for v in new_target1), name="target", index=data.index)
+        data['target'] = new_target
 
-            y_pred_test = black_box.predict(testDf)
-            wapa_complex.append(evaluate_cluster(y_test, y_pred_test))
-            y_pred_df = pd.Series((v for v in y_pred), name="target", index=trainDf.index)
+        labels_count = {}
+        labels_predict = convert_to_labels(y_pred, clusters)
+        for item in labels_predict:
+            if item in labels_count:
+                labels_count[item] += 1
+            else:
+                labels_count[item] = 1
+
+        for depth in depths:
+            if depth not in fidelity:
+                fidelity[depth] = []
+                coverage[depth] = []
+                confidence[depth] = []
+                av_generality[depth] = []
+                average_length[depth] = []
+                n_nodes[depth] = []
+                counter[depth] = []
+                m_depth[depth] = []
+                counter_proba[depth] = []
+                number_of_clusters[depth] = []
+                mse_coverage[depth] = []
+                mse_fidelity[depth] = []
 
             explainer = STACISurrogates(max_depth=depth, regression=True)
-            explainer.fit(trainDf, y_pred_df, features=attrs, target='target')
-            labels_count = {}
-            labels_predict = convert_to_labels(y_pred, explainer.clusters)
-            for item in labels_predict:
-                if item in labels_count:
-                    labels_count[item] += 1
-                else:
-                    labels_count[item] = 1
-
-            number_of_clusters.append(len(labels_count.keys()))
+            explainer.clusters = clusters
+            explainer.fit(data, features=attrs, target='target')
+            print("Training done!")
+            print("--- %s seconds ---" % (time.time() - start_time))
+            number_of_clusters[depth].append(len(labels_count.keys()))
 
             max_nodes = 0
             maximum_depth = 0
@@ -109,9 +140,13 @@ for dataset in datasets:
             exp_predict = explainer.predict(testDf, black_box)
             conf_predict, confidence_sample, leaf_values, explanation_length = explainer.confidence_predict(testDf,
                                                                                                             labels_count)
-
+            print("Prediction done!")
+            print("--- %s seconds ---" % (time.time() - start_time))
             fidelity_sample = evaluate_cluster(y_pred_test, conf_predict)
             coverage_sample = evaluate_cluster(y_pred_test, exp_predict)
+            mse_fidelity_sample = mean_squared_error(y_pred_test, conf_predict)
+            mse_coverage_sample = mean_squared_error(y_pred_test, exp_predict)
+            print(fidelity_sample, coverage_sample)
 
             if fidelity_sample < coverage_sample:
                 print("*********************************************************")
@@ -122,26 +157,33 @@ for dataset in datasets:
                 print(exp_predict)
                 print("*********************************************************")
 
-            fidelity.append(fidelity_sample)
-            coverage.append(coverage_sample)
-            confidence.append(mean(confidence_sample))
-            n_nodes.append(max_nodes)
-            m_depth.append(maximum_depth)
-            av_generality.append(mean(leaf_values))
-            average_length.append(mean(explanation_length))
-        print("=====================================================================")
-        print("Dataset, Depth: ", dataset, depth)
-        print("Fidelity: ", fidelity)
-        print("Average Fidelity: ", mean(fidelity))
-        print("Coverage: ", coverage)
-        print("Average Coverage: ", mean(coverage))
-        print("Average length: ", mean(average_length))
-        print("Maximal length: ", mean(m_depth))
-        print("Confidence: ", confidence)
-        print("Average Confidence: ", mean(confidence))
-        print("Generality: ", av_generality)
-        print("Average Generality: ", mean(av_generality))
-        print("Average number of clusters: ", mean(number_of_clusters))
-        print("Number of clusters: ", number_of_clusters)
-        print("=====================================================================")
-
+            fidelity[depth].append(fidelity_sample)
+            coverage[depth].append(coverage_sample)
+            confidence[depth].append(mean(confidence_sample))
+            n_nodes[depth].append(max_nodes)
+            m_depth[depth].append(maximum_depth)
+            av_generality[depth].append(mean(leaf_values))
+            average_length[depth].append(mean(explanation_length))
+            mse_fidelity[depth].append(mse_fidelity_sample)
+            mse_coverage[depth].append(mse_coverage_sample)
+    with open("nn_results_max_error_" + dataset + ".txt", 'w') as resultfile:
+        for depth in depths:
+            resultfile.write("=====================================================================\n")
+            resultfile.write("Dataset, Depth: " + dataset + ", " + str(depth) + "\n")
+            resultfile.write("Fidelity: " + str(fidelity[depth]) + "\n")
+            resultfile.write("Average Fidelity: " + str(mean(fidelity[depth])) + "\n")
+            resultfile.write("Coverage: " + str(coverage[depth]) + "\n")
+            resultfile.write("Average Coverage: " + str(mean(coverage[depth])) + "\n")
+            resultfile.write("MSE Average Fidelity: " + str(mean(mse_fidelity[depth])) + "\n")
+            resultfile.write("MSE Fidelity: " + str(mse_fidelity[depth]) + "\n")
+            resultfile.write("MSE Average Coverage: " + str(mean(mse_coverage[depth])) + "\n")
+            resultfile.write("MSE Coverage: " + str(mse_coverage[depth]) + "\n")
+            resultfile.write("Average length: " + str(mean(average_length[depth])) + "\n")
+            resultfile.write("Maximal length: " + str(mean(m_depth[depth])) + "\n")
+            resultfile.write("Confidence: " + str(confidence[depth]) + "\n")
+            resultfile.write("Average Confidence: " + str(mean(confidence[depth])) + "\n")
+            resultfile.write("Generality: " + str(av_generality[depth]) + "\n")
+            resultfile.write("Average Generality: " + str(mean(av_generality[depth])) + "\n")
+            resultfile.write("Average number of clusters: " + str(mean(number_of_clusters[depth])) + "\n")
+            resultfile.write("Number of clusters: " + str(number_of_clusters[depth]) + "\n")
+            resultfile.write("=====================================================================\n")

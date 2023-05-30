@@ -6,7 +6,7 @@ from discretization import discretization
 
 class STACISurrogates:
 
-    def __init__(self, max_depth, beta=1, weighted=False, prune=True, regression=False):
+    def __init__(self, max_depth, beta=1, weighted=False, prune=False, regression=False):
         self.trees = {}
         self.max_depth = max_depth
         self.beta = beta
@@ -15,7 +15,7 @@ class STACISurrogates:
         self.regression = regression
         self.clusters = {}
 
-    def fit(self, X, y, features, target):
+    def fit(self, data, features, target):
         """
 
         :param X: array-like of shape (n_samples, n_features)
@@ -26,15 +26,7 @@ class STACISurrogates:
         :return:
 
         """
-        data = data_preparation(X, y, features, target)
-        if self.regression:
-            data_to_discretize = data[target].tolist()
-            intervals = discretization(data_to_discretize)
-            self.clusters = intervals
-            new_target1 = convert_to_labels(data_to_discretize, intervals)
-            new_target = pd.Series((v for v in new_target1), name="target", index=data.index)
-            data = data.drop(target, axis=1)
-            data[target] = new_target
+
         weights = compute_weights(data, target, self.weighted)
         for class_label in data[target].unique():
             self.trees[class_label] = DTree(beta=self.beta, max_depth=self.max_depth)
